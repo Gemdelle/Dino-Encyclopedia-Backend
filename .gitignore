@@ -1,0 +1,36 @@
+# Archivos y directorios comunes de Python
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.db
+*.sqlite3
+*.h5
+*.zip
+
+# Entornos virtuales
+env/
+venv/
+ENV/
+VENV/
+
+# Archivos de configuración de PyCharm
+.idea/
+
+# Archivos de configuración de VS Code
+.vscode/
+
+# Archivos de configuración de Jupyter Notebook
+.ipynb_checkpoints/
+
+# Archivos de distribución y instalación
+*.egg
+*.egg-info/
+dist/
+build/
+*.tar.gz
+
+# Archivos de log
+*.log
+
+node_modules/
