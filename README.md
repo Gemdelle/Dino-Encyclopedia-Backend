@@ -65,7 +65,7 @@ pip install -r requirements.txt
 Para ejecutar el servidor en modo desarrollo:
 
 ```bash
-uvicorn main:app --reload
+python main.py
 ```
 
 ## Base de Datos
