@@ -12,7 +12,7 @@ def load_model() -> Optional[tf.keras.Model]:
     """
     Loads the model if it exists, returns None if the model file is not found.
     """
-    model_path = os.path.join(DATA_DIR, 'models', 'model.h5')
+    model_path = os.path.join(DATA_DIR, 'models', 'dino_analyzer_model.keras')
     if not os.path.exists(model_path):
         return None
     return tf.keras.models.load_model(model_path)

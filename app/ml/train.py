@@ -74,7 +74,7 @@ def train_model():
         validation_steps=validation_generator.samples // validation_generator.batch_size
     )
     
-    model.save(os.path.join(models_dir, 'model.h5'))
+    model.save(os.path.join(models_dir, 'dino_analyzer_model.keras'))
     return history
 
 def get_train_generator():

@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-from typing import List, Literal
+from typing import List, Literal, Optional
 import os
 from dotenv import load_dotenv
 
@@ -27,8 +27,11 @@ class Settings(BaseSettings):
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
     SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
 
-    # SendGrid configuration
-    SENDGRID_API_KEY: str = os.getenv("SENDGRID_API_KEY", "")
+    # Email configuration
+    SMTP_SERVER: str = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+    SMTP_PORT: Optional[int] = int(os.getenv("SMTP_PORT", "587"))
+    SMTP_USERNAME: str = os.getenv("SMTP_USERNAME", "")
+    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
     EMAIL_SENDER: str = os.getenv("EMAIL_SENDER", "")
 
     model_config = {
