@@ -8,9 +8,14 @@ from typing import Optional
 import uuid
 import os
 from datetime import datetime, timedelta
+import hashlib
 
 
 router = APIRouter()
+
+def hash_password(password: str) -> str:
+    """Hash a password using SHA-256"""
+    return hashlib.sha256(password.encode()).hexdigest()
 
 async def get_current_user(token: str) -> dict:
     try:
@@ -22,35 +27,25 @@ async def get_current_user(token: str) -> dict:
 @router.post("/register", response_model=UserProfile)
 async def register_user(user: UserCreate):
     try:
-        # Create user in Firebase
         firebase_user = firebase_auth.create_user(
             email=user.email,
             password=user.password
         )
 
-        # Create user profile in Supabase
         user_data = {
             "id": str(uuid.uuid4()),
             "email": user.email,
             "full_name": user.full_name,
-            "profile_picture": user.profile_picture
+            "profile_picture": user.profile_picture,
+            "password_hash": hash_password(user.password)
         }
-        '''
-        TODO: Sacar hardcodeo cuando se arregle lo de Firebase
         result = supabase.table("profiles").insert(user_data).execute()
         
         if not result.data:
-            # Rollback Firebase user creation if Supabase fails
             firebase_auth.delete_user(firebase_user.uid)
             raise HTTPException(status_code=400, detail="Failed to create user profile")
         
         return UserProfile(**result.data[0])
-        '''
-        return {
-                "id": user_data["id"],
-                "email": user_data["email"],
-                "full_name": user_data["full_name"]
-            }
     
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -65,10 +60,10 @@ async def login_user(user: UserLogin, response: Response):
             raise HTTPException(status_code=401, detail="Invalid credentials")
         
         # Get user profile from Supabase
-        #result = supabase.table("profiles").select("*").eq("email", user.email).execute()
+        result = supabase.table("profiles").select("*").eq("email", user.email).execute()
         
-        #if not result.data:
-            #raise HTTPException(status_code=404, detail="User profile not found")
+        if not result.data:
+            raise HTTPException(status_code=404, detail="User profile not found")
         
         # Set httpOnly cookie
         response.set_cookie(
@@ -85,11 +80,7 @@ async def login_user(user: UserLogin, response: Response):
             "token_type": "bearer",
             "expires_in": int(auth_result["expiresIn"]),
             "refresh_token": auth_result["refreshToken"],
-            "profile": {
-                "id": "123",
-                "email": user.email,
-                "full_name": "Pedro"
-            }#result.data[0]
+            "profile": result.data[0]
         }
     
     except HTTPException:
