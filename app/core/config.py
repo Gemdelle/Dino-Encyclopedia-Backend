@@ -3,16 +3,15 @@ from typing import List, Literal, Optional
 import os
 from dotenv import load_dotenv
 
-# Cargar variables de entorno desde .env
-load_dotenv(override=True)
+load_dotenv()
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Dino Encyclopedia API"
-    ALLOWED_ORIGINS: List[str] = ["http://localhost:5173", "http://127.0.0.1:5174"]  # Agregamos ambas variantes
+    ALLOWED_ORIGINS: List[str] = ["http://localhost:5173"]  # Origen de desarrollo de Vite
     
     # Server configuration
     PORT: int = int(os.getenv("PORT", "8000"))
-    HOST: str = os.getenv("HOST", "127.0.0.1")  # Cambiado de 0.0.0.0 a 127.0.0.1
+    HOST: str = os.getenv("HOST", "0.0.0.0")
     ENVIRONMENT: Literal["development", "production", "testing"] = os.getenv("ENVIRONMENT", "development")
     
     # Firebase configuration
@@ -28,16 +27,16 @@ class Settings(BaseSettings):
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
     SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
 
-    # SendGrid configuration
-    SENDGRID_API_KEY: str = os.getenv("SENDGRID_API_KEY", "")
+    # Email configuration
+    SMTP_SERVER: str = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+    SMTP_PORT: Optional[int] = int(os.getenv("SMTP_PORT", "587"))
+    SMTP_USERNAME: str = os.getenv("SMTP_USERNAME", "")
+    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
     EMAIL_SENDER: str = os.getenv("EMAIL_SENDER", "")
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
-        extra = "allow"
-
-# Para debugging
-print("FIREBASE_PROJECT_ID:", os.getenv("FIREBASE_PROJECT_ID"))
+    model_config = {
+        "env_file": ".env",
+        "case_sensitive": False
+    }
 
 settings = Settings() 

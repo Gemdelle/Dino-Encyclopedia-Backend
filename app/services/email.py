@@ -1,30 +1,47 @@
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail, Email, To, Content, HtmlContent
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from app.core.config import settings
 from fastapi import HTTPException
 import logging
+import ssl
 
 logger = logging.getLogger(__name__)
 
 class EmailService:
     def __init__(self):
-        if not settings.SENDGRID_API_KEY:
-            logger.error("SendGrid API key is not configured")
-            raise ValueError("SendGrid API key is not configured. Please add SENDGRID_API_KEY to your .env file")
+        if not settings.SMTP_SERVER:
+            logger.error("SMTP server is not configured")
+            raise ValueError("SMTP server is not configured. Please add SMTP_SERVER to your .env file")
+        
+        if not settings.SMTP_PORT:
+            logger.error("SMTP port is not configured")
+            raise ValueError("SMTP port is not configured. Please add SMTP_PORT to your .env file")
+        
+        if not settings.SMTP_USERNAME:
+            logger.error("SMTP username is not configured")
+            raise ValueError("SMTP username is not configured. Please add SMTP_USERNAME to your .env file")
+        
+        if not settings.SMTP_PASSWORD:
+            logger.error("SMTP password is not configured")
+            raise ValueError("SMTP password is not configured. Please add SMTP_PASSWORD to your .env file")
         
         if not settings.EMAIL_SENDER:
             logger.error("Email sender is not configured")
             raise ValueError("Email sender is not configured. Please add EMAIL_SENDER to your .env file")
         
-        self.sendgrid_client = SendGridAPIClient(settings.SENDGRID_API_KEY)
+        self.smtp_server = settings.SMTP_SERVER
+        self.smtp_port = settings.SMTP_PORT
+        self.smtp_username = settings.SMTP_USERNAME
+        self.smtp_password = settings.SMTP_PASSWORD
         self.sender_email = settings.EMAIL_SENDER
         
-        logger.info(f"Initializing SendGrid email service")
+        logger.info(f"Initializing SMTP email service with server: {self.smtp_server}:{self.smtp_port}")
         logger.info(f"Using sender email: {self.sender_email}")
 
     async def send_password_reset_email(self, to_email: str, reset_link: str):
         """
-        Send password reset email using SendGrid
+        Send password reset email using SMTP
         """
         try:
             logger.info(f"Attempting to send password reset email to {to_email}")
@@ -34,6 +51,12 @@ class EmailService:
             
             if not reset_link:
                 raise ValueError("Reset link is required")
+            
+            # Create message
+            message = MIMEMultipart()
+            message["From"] = self.sender_email
+            message["To"] = to_email
+            message["Subject"] = "Reset Your Password - Dino Encyclopedia"
             
             # Create HTML content
             html_content = f"""
@@ -61,25 +84,25 @@ class EmailService:
             </div>
             """
             
-            # Create SendGrid message
-            message = Mail(
-                from_email=self.sender_email,
-                to_emails=to_email,
-                subject="Reset Your Password - Dino Encyclopedia",
-                html_content=html_content
-            )
+            # Attach HTML content
+            message.attach(MIMEText(html_content, "html"))
+            
+            # Create secure SSL/TLS connection
+            context = ssl.create_default_context()
             
             try:
-                response = self.sendgrid_client.send(message)
-                if response.status_code in [200, 201, 202]:
+                with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+                    server.starttls(context=context)
+                    server.login(self.smtp_username, self.smtp_password)
+                    server.send_message(message)
                     logger.info(f"Successfully sent password reset email to {to_email}")
                     return True
-                else:
-                    error_msg = f"Failed to send email. Status code: {response.status_code}"
-                    logger.error(error_msg)
-                    raise HTTPException(status_code=500, detail=error_msg)
                     
-            except Exception as e:
+            except smtplib.SMTPAuthenticationError:
+                error_msg = "SMTP authentication failed. Please check your credentials."
+                logger.error(error_msg)
+                raise HTTPException(status_code=500, detail=error_msg)
+            except smtplib.SMTPException as e:
                 error_msg = f"Failed to send email: {str(e)}"
                 logger.error(error_msg)
                 raise HTTPException(status_code=500, detail=error_msg)
