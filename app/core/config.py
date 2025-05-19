@@ -16,22 +16,22 @@ class Settings(BaseSettings):
     ]
     
     # Server configuration
-    PORT: int = 8000
+    PORT: int = int(os.getenv("PORT", 8000))
     HOST: str = "0.0.0.0"
-    ENVIRONMENT: str = "development"
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     
     # Firebase configuration
-    FIREBASE_PROJECT_ID: str
-    FIREBASE_PRIVATE_KEY_ID: str
-    FIREBASE_PRIVATE_KEY: str
-    FIREBASE_CLIENT_EMAIL: str
-    FIREBASE_CLIENT_ID: str
-    FIREBASE_CLIENT_CERT_URL: str
-    FIREBASE_WEB_API_KEY: str
+    FIREBASE_PROJECT_ID: Optional[str] = None
+    FIREBASE_PRIVATE_KEY_ID: Optional[str] = None
+    FIREBASE_PRIVATE_KEY: Optional[str] = None
+    FIREBASE_CLIENT_EMAIL: Optional[str] = None
+    FIREBASE_CLIENT_ID: Optional[str] = None
+    FIREBASE_CLIENT_CERT_URL: Optional[str] = None
+    FIREBASE_WEB_API_KEY: Optional[str] = None
     
     # Supabase configuration
-    SUPABASE_URL: str
-    SUPABASE_KEY: str
+    SUPABASE_URL: Optional[str] = None
+    SUPABASE_KEY: Optional[str] = None
 
     class Config:
         env_file = ".env"
@@ -42,10 +42,26 @@ class Settings(BaseSettings):
         super().__init__(**kwargs)
         if self.FIREBASE_PRIVATE_KEY:
             self.FIREBASE_PRIVATE_KEY = self.FIREBASE_PRIVATE_KEY.replace('\\n', '\n')
+        
+        # Validar que las variables requeridas estén presentes en producción
+        if self.ENVIRONMENT != "development":
+            if not all([
+                self.FIREBASE_PROJECT_ID,
+                self.FIREBASE_PRIVATE_KEY_ID,
+                self.FIREBASE_PRIVATE_KEY,
+                self.FIREBASE_CLIENT_EMAIL,
+                self.FIREBASE_CLIENT_ID,
+                self.FIREBASE_CLIENT_CERT_URL,
+                self.FIREBASE_WEB_API_KEY,
+                self.SUPABASE_URL,
+                self.SUPABASE_KEY
+            ]):
+                raise ValueError("All environment variables are required in production mode")
 
 settings = Settings()
 
-# Para debugging
-print("Loaded settings:")
-print(f"FIREBASE_PROJECT_ID: {settings.FIREBASE_PROJECT_ID}")
-print(f"SUPABASE_URL: {settings.SUPABASE_URL}") 
+# Para debugging solo en desarrollo
+if settings.ENVIRONMENT == "development":
+    print("Loaded settings:")
+    print(f"FIREBASE_PROJECT_ID: {settings.FIREBASE_PROJECT_ID}")
+    print(f"SUPABASE_URL: {settings.SUPABASE_URL}") 
