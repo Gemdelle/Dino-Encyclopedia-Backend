@@ -27,21 +27,23 @@ async def get_current_user(token: str) -> dict:
 @router.post("/register", response_model=UserProfile)
 async def register_user(user: UserCreate):
     try:
+        # Crear usuario en Firebase
         firebase_user = firebase_auth.create_user(
             email=user.email,
             password=user.password
         )
 
+        # Crear perfil en Supabase (sin password_hash)
         user_data = {
             "id": str(uuid.uuid4()),
             "email": user.email,
             "full_name": user.full_name,
-            "profile_picture": user.profile_picture,
-            "password_hash": hash_password(user.password)
+            "profile_picture": user.profile_picture
         }
         result = supabase.table("profiles").insert(user_data).execute()
         
         if not result.data:
+            # Si falla la creación del perfil, eliminar el usuario de Firebase
             firebase_auth.delete_user(firebase_user.uid)
             raise HTTPException(status_code=400, detail="Failed to create user profile")
         
