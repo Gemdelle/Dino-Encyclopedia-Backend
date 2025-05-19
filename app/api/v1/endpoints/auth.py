@@ -9,11 +9,7 @@ import uuid
 import os
 from datetime import datetime, timedelta
 import hashlib
-import socket
-import logging
 
-# Agregar después de los imports existentes
-logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -31,65 +27,28 @@ async def get_current_user(token: str) -> dict:
 @router.post("/register", response_model=UserProfile)
 async def register_user(user: UserCreate):
     try:
-        # Verificar conectividad antes de intentar crear el usuario
-        try:
-            socket.getaddrinfo('firebase.google.com', 443)
-        except socket.gaierror:
-            raise HTTPException(
-                status_code=503,
-                detail="No se puede conectar con el servicio de autenticación. Por favor, verifica tu conexión a Internet."
-            )
+        firebase_user = firebase_auth.create_user(
+            email=user.email,
+            password=user.password
+        )
 
-        print(f"firebase: {firebase_auth}")  
-
-        # Intentar crear el usuario en Firebase
-        try:
-            firebase_user = firebase_auth.create_user(
-                email=user.email,
-                password=user.password
-            )
-        except Exception as firebase_error:
-            logger.error(f"Error creating Firebase user: {firebase_error}")
-            raise HTTPException(
-                status_code=503,
-                detail="Error al crear el usuario en el servicio de autenticación " + str(firebase_error)
-            )
-
-        # Crear el perfil en Supabase
         user_data = {
             "id": str(uuid.uuid4()),
             "email": user.email,
             "full_name": user.full_name,
             "profile_picture": user.profile_picture,
+            "password_hash": hash_password(user.password)
         }
-
-        try:
-            result = supabase.table("profiles").insert(user_data).execute()
-            if not result.data:
-                # Si falla la creación del perfil, eliminar el usuario de Firebase
-                firebase_auth.delete_user(firebase_user.uid)
-                raise HTTPException(
-                    status_code=400,
-                    detail="Failed to create user profile"
-                )
-            return UserProfile(**result.data[0])
-        except Exception as supabase_error:
-            # Si falla la creación del perfil, eliminar el usuario de Firebase
+        result = supabase.table("profiles").insert(user_data).execute()
+        
+        if not result.data:
             firebase_auth.delete_user(firebase_user.uid)
-            logger.error(f"Error creating Supabase profile: {supabase_error}")
-            raise HTTPException(
-                status_code=503,
-                detail="Error al crear el perfil de usuario " + str(supabase_error)
-            )
-
-    except HTTPException:
-        raise
+            raise HTTPException(status_code=400, detail="Failed to create user profile")
+        
+        return UserProfile(**result.data[0])
+    
     except Exception as e:
-        logger.error(f"Unexpected error creating user: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Error inesperado al crear el usuario"
-        )
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/login")
 async def login_user(user: UserLogin, response: Response):
