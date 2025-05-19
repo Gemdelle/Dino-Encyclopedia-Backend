@@ -3,14 +3,14 @@ from firebase_admin import auth as firebase_auth
 from app.core.supabase import supabase
 from app.models.user import UserCreate, UserLogin, UserProfile, PasswordReset, UserUpdate
 from app.utils.auth import verify_password_firebase
-from app.services.email import email_service
 from typing import Optional
 import uuid
 import os
 from datetime import datetime, timedelta
 import hashlib
+import logging
 
-
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 def hash_password(password: str) -> str:
@@ -91,12 +91,9 @@ async def login_user(user: UserLogin, response: Response):
 @router.post("/reset-password")
 async def reset_password(reset_data: PasswordReset):
     try:
+        # Firebase maneja el envío del email automáticamente
         link = firebase_auth.generate_password_reset_link(reset_data.email)
-        
-        await email_service.send_password_reset_email(reset_data.email, link)
-        
         return {"message": "Password reset link sent to your email"}
-    
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
