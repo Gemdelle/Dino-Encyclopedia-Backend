@@ -8,7 +8,10 @@ load_dotenv(override=True)
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Dino Encyclopedia API"
-    ALLOWED_ORIGINS: List[str] = ["http://localhost:5173", "http://127.0.0.1:5174"]  # Agregamos ambas variantes
+    ALLOWED_ORIGINS: List[str] = [
+        "http://localhost:5173",  # Tu frontend local en Vite
+        "http://localhost:5174",
+    ]
     
     # Server configuration
     PORT: int = int(os.getenv("PORT", "8000"))
