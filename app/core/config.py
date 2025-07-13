@@ -15,6 +15,9 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5174"
     ]
     
+    # Railway domain (will be added to ALLOWED_ORIGINS if provided)
+    RAILWAY_DOMAIN: Optional[str] = None
+    
     # Server configuration
     PORT: int = int(os.getenv("PORT", 8000))
     HOST: str = "0.0.0.0"
@@ -42,6 +45,11 @@ class Settings(BaseSettings):
         super().__init__(**kwargs)
         if self.FIREBASE_PRIVATE_KEY:
             self.FIREBASE_PRIVATE_KEY = self.FIREBASE_PRIVATE_KEY.replace('\\n', '\n')
+        
+        # Agregar dominio de Railway a los orígenes permitidos si está configurado
+        if self.RAILWAY_DOMAIN:
+            if self.RAILWAY_DOMAIN not in self.ALLOWED_ORIGINS:
+                self.ALLOWED_ORIGINS.append(self.RAILWAY_DOMAIN)
         
         # Validar que las variables requeridas estén presentes en producción
         if self.ENVIRONMENT != "development":
