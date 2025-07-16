@@ -12,8 +12,12 @@ class Settings(BaseSettings):
         "http://localhost:5173",
         "http://localhost:5174",
         "http://127.0.0.1:5173",
-        "http://127.0.0.1:5174"
+        "http://127.0.0.1:5174",
+        "https://dino-encyclopedia-nine.vercel.app"
     ]
+    
+    # Additional CORS origins from environment variable
+    ADDITIONAL_CORS_ORIGINS: Optional[str] = None
     
     # Railway domain (will be added to ALLOWED_ORIGINS if provided)
     RAILWAY_DOMAIN: Optional[str] = None
@@ -50,6 +54,13 @@ class Settings(BaseSettings):
         if self.RAILWAY_DOMAIN:
             if self.RAILWAY_DOMAIN not in self.ALLOWED_ORIGINS:
                 self.ALLOWED_ORIGINS.append(self.RAILWAY_DOMAIN)
+        
+        # Agregar orígenes adicionales desde variables de entorno
+        if self.ADDITIONAL_CORS_ORIGINS:
+            additional_origins = [origin.strip() for origin in self.ADDITIONAL_CORS_ORIGINS.split(",")]
+            for origin in additional_origins:
+                if origin and origin not in self.ALLOWED_ORIGINS:
+                    self.ALLOWED_ORIGINS.append(origin)
         
         # Validar que las variables requeridas estén presentes en producción
         if self.ENVIRONMENT != "development":
